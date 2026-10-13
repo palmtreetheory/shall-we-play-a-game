@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#09150e" />
+  <title>Shall We Play a Game? — Portable WarGames Terminal</title>
+  <style>
+    :root { color-scheme: dark; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px;
+      background: radial-gradient(ellipse at 15% 20%, #1c3527 0, transparent 35%),
+                  radial-gradient(ellipse at 90% 75%, #15281e 0, transparent 35%), #060a07;
+      color: #c3d4c1; font-family: 'Courier New', Courier, monospace; }
+    main { width: min(100%, 740px); }
+    .eyebrow { color: #9ad494; text-transform: uppercase; font-size: 12px;
+      letter-spacing: .22em; margin-bottom: 20px; }
+    h1 { font-size: clamp(42px, 8vw, 80px); line-height: .99; color: #b5fcb1;
+      margin: 0 0 27px; letter-spacing: -.055em; text-shadow: 0 0 35px #50b85636; }
+    p { font-size: 15px; line-height: 1.85; max-width: 545px; color: #adc2ae; }
+    .accent { color: #b5fcb1; }
+    .button { display: inline-block; margin-top: 22px; color: #071409; font: bold 13px 'Courier New', monospace;
+      letter-spacing: .13em; background: #b5fcb1; border: 1px solid #b5fcb1;
+      border-radius: 3px; padding: 16px 22px; cursor: pointer; }
+    .button:hover { background: #d3ffd0; }
+    .note { margin-top: 36px; font-size: 11px; color: #7e9b81; line-height: 1.7; }
+    code { color: #b5fcb1; }
+    .button:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">An interactive 1983 terminal homage</div>
+    <h1>SHALL WE<br><span class="accent">PLAY A GAME?</span></h1>
+    <p>A miniature vintage-computer experience hiding in plain sight. Type your answers, face an unbeatable tic-tac-toe computer, or find the secret behind the final game.</p>
+    <button type="button" class="button" onclick="window.WarGamesWidget?.open()">&gt; ACCESS TERMINAL</button>
+    <p class="note">No frameworks. No APIs. No data collection.<br>One portable JavaScript file, compatible with CodePen, GitHub Pages, and an existing website.</p>
+  </main>
+  <!-- Change data-auto-open to "false" to show only the launcher until clicked. -->
+  <!-- Change data-accent to "amber" for an amber-phosphor terminal. -->
+  <script src="./wargames-widget.js" data-auto-open="true" data-delay="1600" data-accent="green"></script>
+</body>
+</html>
