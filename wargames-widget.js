@@ -3,6 +3,7 @@
  * Paste this entire file into CodePen's JS panel, or load it with one script tag.
  * Configuration: data-auto-open="true|false" data-delay="1800" data-accent="green|amber"
  * Public API: window.WarGamesWidget.open(), .close(), .reset()
+ * Font: VT323 + Silkscreen via Google Fonts (fallback: system monospace)
  * MIT License
  */
 (() => {
@@ -14,6 +15,8 @@
   const delay = Math.max(0, Math.min(60000, Number(script?.dataset.delay ?? 1800) || 0));
   const accent = script?.dataset.accent === 'amber' ? 'amber' : 'green';
   const STORAGE_KEY = 'wargames-widget-seen-v1';
+  // Links from Squarespace use ?play=1 to open the terminal immediately.
+  const directPlay = new URLSearchParams(window.location.search).get('play') === '1';
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   let shadow, overlay, launcher, terminal, stage, input, stateLabel, commandHint;
@@ -32,17 +35,18 @@
   const remember = () => { try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (_) { /* storage unavailable */ } };
 
   const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap');
     :host { --wg-green: #b5fcb1; --wg-accent: ${accent === 'amber' ? '#ffd583' : '#b5fcb1'};
       --wg-muted: ${accent === 'amber' ? '#bc9a61' : '#79a977'}; --wg-panel: #07110b;
-      position: static; font-family: 'Courier New', Courier, monospace; }
+      position: static; font-family: 'VT323', 'Lucida Console', 'Courier New', monospace; }
     *, *::before, *::after { box-sizing: border-box; }
     button, input { font: inherit; }
     button { -webkit-tap-highlight-color: transparent; }
     [hidden] { display: none !important; }
     .launcher { position: fixed; z-index: 2147483640; right: 22px; bottom: 22px;
       display: flex; align-items: center; gap: 10px; border: 1px solid var(--wg-accent);
-      border-radius: 999px; background: #06110b; color: var(--wg-accent);
-      padding: 13px 18px; font-size: 12px; font-weight: bold; letter-spacing: .075em;
+      border-radius: 0; background: #06110b; color: var(--wg-accent);
+      padding: 14px 18px; font: 12px 'Silkscreen', monospace; letter-spacing: 0;
       box-shadow: 0 0 28px #0008, inset 0 0 17px #345b353b; cursor: pointer;
       transition: transform .15s ease, background .15s ease; }
     .launcher:hover { transform: translateY(-3px); background: #102719; }
@@ -54,7 +58,7 @@
     .scrim { position: absolute; inset: 0; background: #010403d9; backdrop-filter: blur(5px); }
     .window { position: relative; width: min(100%, 740px); max-height: min(90vh, 790px);
       display: flex; flex-direction: column; overflow: hidden; background: #060e09;
-      border: 1px solid #6ab46a; border-radius: 7px;
+      border: 2px solid #6ab46a; border-radius: 0;
       color: var(--wg-accent); box-shadow: 0 0 0 6px #06150ac9, 0 25px 90px #000, 0 0 55px #3cac4529; }
     .window::before { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
       background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, #0004 4px, transparent 5px);
@@ -66,61 +70,61 @@
       border-bottom: 1px solid #2c5332; padding: 14px 18px; background: #0b1d11; }
     .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .brand-mark { border: 1px solid var(--wg-accent); padding: 6px 7px;
-      font-weight: 900; font-size: 11px; letter-spacing: .06em; }
+      font: 11px 'Silkscreen', monospace; letter-spacing: 0; }
     .brand-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    .brand-title strong { font-size: 12px; letter-spacing: .15em; }
-    .brand-title small { color: var(--wg-muted); font-size: 10px; letter-spacing: .08em; }
+    .brand-title strong { font: 11px 'Silkscreen', monospace; letter-spacing: .01em; }
+    .brand-title small { color: var(--wg-muted); font: 16px 'VT323', monospace; letter-spacing: .03em; }
     .bar-right { display: flex; align-items: center; gap: 15px; }
-    .connection { color: var(--wg-muted); font-size: 10px; white-space: nowrap; }
+    .connection { color: var(--wg-muted); font: 17px 'VT323', monospace; white-space: nowrap; }
     .dot { display: inline-block; margin-right: 6px; width: 6px; height: 6px;
       border-radius: 50%; background: var(--wg-accent); box-shadow: 0 0 9px var(--wg-accent); }
     .close { border: 1px solid #4b6f4b; background: #142417; color: var(--wg-accent);
-      width: 32px; height: 32px; border-radius: 3px; font-size: 20px; cursor: pointer; }
+      width: 32px; height: 32px; border-radius: 0; font-size: 23px; cursor: pointer; }
     .close:hover { background: #27462b; }
     .body { padding: clamp(18px, 4vw, 33px); overflow-y: auto; min-height: 300px;
       scrollbar-color: #315b35 transparent; scrollbar-width: thin; }
     .meta { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap;
-      font-size: 10px; letter-spacing: .09em; color: var(--wg-muted); margin-bottom: 21px; }
+      font-size: 17px; letter-spacing: .06em; color: var(--wg-muted); margin-bottom: 21px; }
     .separator { border-top: 1px dashed #467149; opacity: .75; margin-bottom: 22px; }
-    .terminal { min-height: 95px; color: var(--wg-accent); font-size: clamp(15px, 2.5vw, 20px);
-      font-weight: bold; line-height: 1.65; letter-spacing: .09em; text-shadow: 0 0 11px #77fb6880;
+    .terminal { min-height: 95px; color: var(--wg-accent); font-size: clamp(25px, 3.5vw, 32px);
+      font-weight: 400; line-height: 1.16; letter-spacing: .025em; text-shadow: 0 0 11px #77fb6880;
       white-space: pre-wrap; overflow-wrap: anywhere; }
     .line { margin: 0 0 12px; }
-    .line.system { color: var(--wg-muted); font-size: .77em; letter-spacing: .09em; }
-    .line.important { font-size: clamp(18px, 3.4vw, 26px); line-height: 1.4; }
+    .line.system { color: var(--wg-muted); font-size: .82em; letter-spacing: .06em; }
+    .line.important { font-size: clamp(32px, 5.5vw, 46px); line-height: 1.0; }
     .caret { display: inline-block; width: 10px; height: 1em; background: var(--wg-accent);
       vertical-align: -2px; margin-left: 2px; animation: wg-blink 1s steps(1) infinite; }
     .stage { margin-top: 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
     .choices { display: flex; flex-wrap: wrap; gap: 11px; }
     .choice { padding: 12px 17px; min-height: 42px; background: #0c2011;
-      border: 1px solid #5d9b61; border-radius: 3px; color: var(--wg-accent);
-      font-size: 12px; font-weight: bold; letter-spacing: .11em; cursor: pointer;
+      border: 1px solid #5d9b61; border-radius: 0; color: var(--wg-accent);
+      font: 11px 'Silkscreen', monospace; letter-spacing: 0; cursor: pointer;
       transition: background .12s ease, box-shadow .12s ease; }
     .choice:hover { background: #183a20; box-shadow: 0 0 14px #5cdd5c22; }
     .choice.primary { background: #b5fcb1; color: #06160b; border-color: #b5fcb1; }
     .choice.primary:hover { background: #defedc; }
     .choice:disabled { cursor: wait; opacity: .5; }
-    .game-info { font-size: 12px; letter-spacing: .08em; color: var(--wg-muted); }
+    .game-info { font-size: 22px; letter-spacing: .02em; color: var(--wg-muted); }
     .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
       width: min(100%, 270px); margin: 2px 0; }
     .cell { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid #42744a;
-      border-radius: 3px; background: #0d2012; color: var(--wg-accent);
-      font: bold clamp(29px, 8vw, 47px)/1 'Courier New', monospace;
+      border-radius: 0; background: #0d2012; color: var(--wg-accent);
+      font: 400 clamp(48px, 10vw, 66px)/1 'VT323', monospace;
       text-shadow: 0 0 12px #b7ffad66; cursor: pointer; }
     .cell:hover:not(:disabled) { background: #22432a; }
     .cell:disabled { cursor: default; }
     .cell.o { color: #e7c981; text-shadow: 0 0 12px #efc87677; }
-    .outcome { max-width: 490px; color: var(--wg-accent); font-size: 14px;
-      font-weight: bold; line-height: 1.6; letter-spacing: .05em; }
+    .outcome { max-width: 490px; color: var(--wg-accent); font-size: 26px;
+      font-weight: normal; line-height: 1.2; letter-spacing: .03em; }
     .footer { display: flex; align-items: center; gap: 12px; padding: 13px 19px;
       border-top: 1px solid #2c5332; background: #09170e; }
     .prompt-sign { color: var(--wg-accent); font-size: 18px; font-weight: bold; }
     .command { width: 100%; min-width: 0; border: none; outline: none; background: transparent;
-      color: var(--wg-accent); font: bold 14px 'Courier New', monospace; letter-spacing: .07em;
+      color: var(--wg-accent); font: 26px 'VT323', monospace; letter-spacing: .035em;
       caret-color: var(--wg-accent); }
     .command::placeholder { color: #749779; opacity: 1; }
     .command:disabled { opacity: .5; }
-    .hint { display: block; margin-left: auto; flex-shrink: 0; font-size: 10px;
+    .hint { display: block; margin-left: auto; flex-shrink: 0; font-size: 16px;
       color: var(--wg-muted); letter-spacing: .07em; }
     .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0;
       margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -133,7 +137,7 @@
       .body { min-height: 260px; }
       .launcher { bottom: 14px; right: 14px; padding: 12px 14px; }
       .choices { gap: 8px; }
-      .choice { padding: 10px 12px; font-size: 11px; }
+      .choice { padding: 10px 12px; font-size: 10px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   `;
@@ -460,7 +464,9 @@
       else if (!e.shiftKey && shadow.activeElement === last) { e.preventDefault(); first.focus(); }
     });
     window.WarGamesWidget = Object.freeze({ open, close, reset });
-    if (autoOpen && !seenThisSession) setTimeout(() => { if (!opened) open(); }, delay);
+    if (directPlay || (autoOpen && !seenThisSession)) {
+      setTimeout(() => { if (!opened) open(); }, directPlay ? 120 : delay);
+    }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
