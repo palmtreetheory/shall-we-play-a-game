@@ -1,0 +1,4 @@
+html.wg-modal-open,
+body.wg-modal-open {
+  overflow: hidden;
+}
