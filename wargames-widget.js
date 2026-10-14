@@ -340,25 +340,90 @@
     input.disabled = false;
     input.focus({ preventScroll: true });
   };
-  const simulate = async () => {
-    clearScene('simulation');
-    input.disabled = true;
-    setHint('ENTER MENU OR EXIT');
-    const done = await write([
-      { text: 'GLOBAL THERMONUCLEAR WAR', kind: 'important' },
-      { text: 'RUNNING OUTCOME SIMULATION...', kind: 'system' },
-      { text: 'ANALYZING ALL POSSIBLE ENDINGS...', kind: 'system' },
-      { text: 'RESULT: NO WINNING SCENARIOS.' },
-      { text: 'A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.', kind: 'important' },
-    ]);
-    if (!done) return;
-    makeChoices([
-      { label: 'PLAY TIC-TAC-TOE', primary: true, run: startGame },
-      { label: 'MAIN MENU', run: showMenu },
-    ]);
-    input.disabled = false;
-    input.focus({ preventScroll: true });
-  };
+  
+const simulate = async () => {
+  clearScene('simulation');
+  input.disabled = true;
+  setHint('ENTER MENU OR EXIT');
+
+  // STEP 1: Print the opening messages.
+  const started = await write([
+    {
+      text: 'GLOBAL THERMONUCLEAR WAR',
+      kind: 'important'
+    },
+    {
+      text: 'RUNNING OUTCOME SIMULATION',
+      kind: 'system'
+    },
+  ]);
+
+  if (!started) return;
+
+  // STEP 2: Animate the processing dots.
+  const token = runToken;
+  const statusLine = terminal.lastElementChild;
+  const message = 'RUNNING OUTCOME SIMULATION';
+
+  // Six frames create one complete dot cycle.
+  const dotSequence = [0, 1, 2, 3, 2, 1];
+
+  // Four cycles = random.
+  const frames = reducedMotion ? 1 : 18 + Math.floor(Math.random() * 25);
+  const frameDelay = reducedMotion ? 900 : 350;
+
+  for (let i = 0; i < frames; i++) {
+    // Stop if the user leaves the simulation.
+    if (token !== runToken || !opened) return;
+
+    const dots = reducedMotion
+      ? 3
+      : dotSequence[i % dotSequence.length];
+
+    statusLine.textContent =
+      message + '.'.repeat(dots);
+
+    await sleep(frameDelay);
+  }
+
+  if (token !== runToken || !opened) return;
+
+  // Leave the full ellipsis visible.
+  statusLine.textContent = message + '...';
+
+  // STEP 3: Continue displaying the results.
+  const done = await write([
+    {
+      text: 'ANALYZING ALL POSSIBLE ENDINGS...',
+      kind: 'system'
+    },
+    {
+      text: 'RESULT: NO WINNING SCENARIOS.'
+    },
+    {
+      text: 'A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.',
+      kind: 'important'
+    },
+  ]);
+
+  if (!done) return;
+
+  makeChoices([
+    {
+      label: 'PLAY TIC-TAC-TOE',
+      primary: true,
+      run: startGame
+    },
+    {
+      label: 'MAIN MENU',
+      run: showMenu
+    },
+  ]);
+
+  input.disabled = false;
+  input.focus({ preventScroll: true });
+};
+
 
   const handleCommand = (raw) => {
     const cmd = raw.toUpperCase().trim().replace(/[._-]/g, ' ').replace(/\s+/g, ' ');
