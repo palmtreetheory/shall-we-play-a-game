@@ -392,11 +392,48 @@ const simulate = async () => {
   statusLine.textContent = message + '...';
 
   // STEP 3: Continue displaying the results.
-  const done = await write([
+
+  // STEP 3: Analyze all possible endings at random intervals.
+  const analysisStarted = await write([
     {
-      text: 'ANALYZING ALL POSSIBLE ENDINGS...',
+      text: 'ANALYZING ALL POSSIBLE ENDINGS',
       kind: 'system'
-    },
+    }
+  ]);
+
+  if (!analysisStarted) return;
+
+  const analysisLine = terminal.lastElementChild;
+  const analysisMessage = 'ANALYZING ALL POSSIBLE ENDINGS';
+
+  // Generate a NEW random processing duration.
+  const analysisFrames = reducedMotion
+    ? 1
+    : 18 + Math.floor(Math.random() * 25);
+
+  const analysisDelay = reducedMotion ? 900 : 350;
+
+  // Animate the ellipsis independently.
+  for (let i = 0; i < analysisFrames; i++) {
+    if (token !== runToken || !opened) return;
+
+    const dots = reducedMotion
+      ? 3
+      : dotSequence[i % dotSequence.length];
+
+    analysisLine.textContent =
+      analysisMessage + '.'.repeat(dots);
+
+    await sleep(analysisDelay);
+  }
+
+  if (token !== runToken || !opened) return;
+
+  // Leave the full ellipsis visible.
+  analysisLine.textContent = analysisMessage + '...';
+
+  // STEP 4: Display the final results.
+  const done = await write([
     {
       text: 'RESULT: NO WINNING SCENARIOS.'
     },
@@ -405,6 +442,9 @@ const simulate = async () => {
       kind: 'important'
     },
   ]);
+
+  if (!done) return;
+
 
   if (!done) return;
 
