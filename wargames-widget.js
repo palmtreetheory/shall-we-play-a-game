@@ -374,7 +374,7 @@ const simulate = async () => {
 
   for (let i = 0; i < frames; i++) {
     // Stop if the user leaves the simulation.
-    if (token !== runToken || !opened) return;
+    if (analysisToken !== runToken || !opened) return;
 
     const dots = reducedMotion
       ? 3
@@ -386,7 +386,7 @@ const simulate = async () => {
     await sleep(frameDelay);
   }
 
-  if (token !== runToken || !opened) return;
+  if (analysisToken !== runToken || !opened) return;
 
   // Leave the full ellipsis visible.
   statusLine.textContent = message + '...';
@@ -403,6 +403,8 @@ const simulate = async () => {
 
   if (!analysisStarted) return;
 
+  const analysisToken = runToken;
+
   const analysisLine = terminal.lastElementChild;
   const analysisMessage = 'ANALYZING ALL POSSIBLE ENDINGS';
 
@@ -415,7 +417,7 @@ const simulate = async () => {
 
   // Animate the ellipsis independently.
   for (let i = 0; i < analysisFrames; i++) {
-    if (token !== runToken || !opened) return;
+    if (analysisToken !== runToken || !opened) return;
 
     const dots = reducedMotion
       ? 3
@@ -427,7 +429,7 @@ const simulate = async () => {
     await sleep(analysisDelay);
   }
 
-  if (token !== runToken || !opened) return;
+  if (analysisToken !== runToken || !opened) return;
 
   // Leave the full ellipsis visible.
   analysisLine.textContent = analysisMessage + '...';
