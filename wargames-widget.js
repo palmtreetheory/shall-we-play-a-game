@@ -384,6 +384,8 @@
     if (!overlay || opened) return;
     lastFocus = document.activeElement;
     opened = true;
+    document.documentElement.classList.add('wg-modal-open');
+    document.body.classList.add('wg-modal-open');
     remember();
     overlay.hidden = false;
     launcher.hidden = true;
@@ -392,6 +394,8 @@
   function close() {
     if (!overlay || !opened) return;
     opened = false;
+    document.documentElement.classList.remove('wg-modal-open');
+    document.body.classList.remove('wg-modal-open');
     cancelPending();
     overlay.hidden = true;
     launcher.hidden = false;
